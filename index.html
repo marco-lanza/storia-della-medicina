@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🧠 Quiz – Storia della Medicina</title>
+  <style>
+    :root { --bg1: #f8d9eb; --bg2: #e3d9f8; --bg3: #d9f0f8; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg3));
+      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; color:#222;
+    }
+    .app { width: min(1000px, 95%); padding: 28px; display:flex; flex-direction:column; gap:22px; }
+    header { text-align:center; }
+    header h1 { font-size:2rem; margin:0; }
+    .glass {
+      background: rgba(255,255,255,0.25);
+      backdrop-filter: blur(18px);
+      border-radius:24px;
+      padding:24px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.25), 0 0 12px rgba(255,255,255,0.5);
+      text-align:center;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    .btn {
+      padding:14px 28px;
+      border:none; border-radius:20px;
+      cursor:pointer;
+      background:rgba(255,255,255,0.75);
+      color:#222;
+      margin:12px;
+      font-weight:600;
+      transition:all .3s ease;
+      font-size:1rem;
+    }
+    .btn:hover { background:#fff; transform:scale(1.05); }
+    .option {
+      background: rgba(255,255,255,0.35);
+      margin:10px 0;
+      padding:14px;
+      border-radius:16px;
+      cursor:pointer;
+      transition: all .3s ease;
+    }
+    .option:hover { background: rgba(255,255,255,0.55); }
+    .option.correct { background: rgba(144,238,144,0.6) !important; animation: pop 0.4s ease; }
+    .option.wrong { background: rgba(255,127,127,0.6) !important; animation: shake 0.4s ease; }
+    @keyframes pop { 0%{transform:scale(1);} 50%{transform:scale(1.1);} 100%{transform:scale(1);} }
+    @keyframes shake { 0%{transform:translateX(0);} 25%{transform:translateX(-5px);} 50%{transform:translateX(5px);} 75%{transform:translateX(-5px);} 100%{transform:translateX(0);} }
+    .explanation { margin-top:15px; text-align:left; color:#222; font-size:15px; }
+    .mascotte { font-size:72px; animation: dance 1s infinite; margin: 16px; text-align:center; }
+    @keyframes dance { 0% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(-8deg) scale(1.05); } 50% { transform: rotate(0deg) scale(1); } 75% { transform: rotate(8deg) scale(1.05); } 100% { transform: rotate(0deg) scale(1); } }
+    #answersList { text-align:left; margin-top:20px; }
+    .answer-item { margin-bottom:16px; padding:12px; border-radius:12px; background: rgba(255,255,255,0.3); }
+    .answer-item strong { display:block; margin-bottom:6px; }
+    .status {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:26px; height:26px;
+      border-radius:50%;
+      font-size:16px;
+      font-weight:bold;
+      color:#fff;
+      margin-right:8px;
+    }
+    .status.correct { background:#34c759; } /* iOS green */
+    .status.wrong { background:#ff3b30; }   /* iOS red */
+    .progress-bar-container { width: 100%; background: rgba(0,0,0,0.1); border-radius: 12px; height: 16px; margin-bottom: 16px; overflow:hidden; }
+    .progress-bar { height: 100%; width: 0%; background: #333; transition: width 0.4s ease; border-radius: 12px; }
+    .circle-progress { position: relative; width: 150px; height: 150px; margin: 0 auto 20px; }
+    .circle-progress svg { transform: rotate(-90deg); }
+    .circle-progress circle { fill: none; stroke-width: 12; stroke-linecap: round; }
+    .circle-bg { stroke: rgba(0,0,0,0.1); }
+    .circle-bar { stroke: #333; stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 1s ease; }
+    .circle-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:1.5rem; font-weight:bold; }
+    .start-info { font-size:1.1rem; margin:10px 0; text-align:center; }
+    .btn-row { display:flex; justify-content:center; gap:20px; flex-wrap:wrap; }
+    .number-box { display:flex; justify-content:center; align-items:center; margin-top:10px; gap:10px; }
+    #howmany { width:80px; padding:10px; border-radius:12px; border:none; font-size:1rem; text-align:center; -moz-appearance:textfield; }
+    #howmany::-webkit-outer-spin-button, #howmany::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .stepper-btn {
+      width:40px; height:40px;
+      border-radius:50%;
+      border:none;
+      background:rgba(255,255,255,0.75);
+      font-size:1.4rem;
+      font-weight:bold;
+      cursor:pointer;
+      transition:all .3s ease;
+    }
+    .stepper-btn:hover { background:#fff; transform:scale(1.1); }
+    #nextBtn { display:none; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="glass">
+      <h1>🧠 Quiz – Storia della Medicina</h1>
+    </header>
+    <section id="start" class="glass">
+      <h2>Quante domande vuoi fare?</h2>
+      <p class="start-info">Sono disponibili <span id="totalCount">0</span> quiz.</p>
+      <div class="number-box">
+        <button class="stepper-btn" id="decrease">−</button>
+        <input id="howmany" type="number" min="1" step="1" value="10" />
+        <button class="stepper-btn" id="increase">+</button>
+      </div>
+      <div class="btn-row"><button class="btn" id="startBtn">Inizia</button></div>
+    </section>
+    <main id="quiz" class="glass" style="display:none">
+      <div class="progress-bar-container"><div class="progress-bar" id="progress"></div></div>
+      <div id="quizContent"></div>
+      <div class="btn-row"><button class="btn" id="nextBtn">Prossima domanda</button></div>
+    </main>
+    <section id="result" class="glass" style="display:none">
+      <div class="circle-progress">
+        <svg width="150" height="150">
+          <circle class="circle-bg" cx="75" cy="75" r="70" />
+          <circle class="circle-bar" id="circleBar" cx="75" cy="75" r="70" />
+        </svg>
+        <div class="circle-text" id="circleText">0%</div>
+      </div>
+      <div class="mascotte" id="mascotte">🙂</div>
+      <div id="verdict"></div>
+      <div id="answersList"></div>
+      <div class="btn-row">
+        <button class="btn" id="restartBtn">Nuovo quiz</button>
+        <button class="btn" id="retryWrongBtn">Ripassa errori</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const QUESTIONS = [
+  {
+    "q": "Cosa si intende per procedimento induttivo nella scienza medica: ",
+    "opts": [
+      "Adeguata raccolta di elementi sperimentali per giungere a formulare delle ipotesi",
+      "Partire dalle teorie per arrivare alle conseguenze verificabili o falsificabili",
+      "Situazione sperimentale in cui i nessi di casualità derivano da correlazioni statistiche",
+      "Il procedimento sperimentale galenico"
+    ],
+    "expl": "Adeguata raccolta di elementi sperimentali per giungere a formulare delle ipotesi”. Le altre opzioni descrivono concetti diversi e non coincidono con il significato tecnico richiesto dalla domanda."
+  },
+  {
+    "q": "I rimedi omeopatici, in accordo con Hahnemann, sono farmacologicamente attivati durante:",
+    "opts": [
+      "Succussione",
+      "Distillazione",
+      "Macerazione alcolica",
+      "Bollitura prolungata"
+    ],
+    "expl": "Dopo ogni fase di diluizione, il composto viene energicamente agitato o percosso (in un movimento verticale). Questo passaggio, chiamato succussione, è ritenuto da Hahnemann essenziale per liberare l'energia o la forza vitale della sostanza."
+  },
+  {
+    "q": "Gli omeopati partono da una legge fondamentale che sarebbe vera:",
+    "opts": [
+      "Legge della infinitesimalità",
+      "Legge sulla differenziazione delle sostanze chimiche (che avrebbero proprietà particolari indipendenti dai sintomi della malattia che si vuole curare) ",
+      "Legge della concentrazione (una sostanza concentrata aumenta l’effetto farmacologico) ",
+      "Principio della vis medicatrix naturae"
+    ],
+    "expl": "La causa/fonte principale indicata è “legge della infinitesimalità”, mentre le altre risposte sono cause secondarie o non pertinenti al fenomeno descritto."
+  },
+  {
+    "q": "Da quale legge fondamentale partono gli omeopati?",
+    "opts": [
+      "Legge del simile che cura il simile",
+      "Contraria contrariis curantur (legge ippocratica)",
+      "Teoria degli umori (Ippocrate e Galeno)",
+      "Principio della vis medicatrix naturae"
+    ],
+    "expl": "La Legge del simile che cura il simile stabilisce che una sostanza che causa sintomi in una persona sana può essere utilizzata, in dosi infinitesimali, per curare gli stessi sintomi in una persona malata."
+  },
+  {
+    "q": "Chi è il primo che ha provato che le vaccinazioni potessero essere una procedura generale di prevenzione delle malattie infettive?",
+    "opts": [
+      "Edward Jenner",
+      "Louis Pasteur",
+      "Robert Koch",
+      "Lady Mary Montagu"
+    ],
+    "expl": "Jenner (1796) dimostrò che l’inoculazione del vaiolo bovino (cowpox) proteggeva dal vaiolo umano, fondando il principio di vaccinazione preventiva."
+  },
+  {
+    "q": "Secondo ricercatore che ha introdotto una vaccinazione di successo:",
+    "opts": [
+      "Louis Pasteur",
+      "Robert Koch",
+      "Paul Ehrlich",
+      "Agostino Bassi"
+    ],
+    "expl": "Pasteur estese la vaccinazione a malattie come rabbia e antrace tramite attenuazione dei patogeni, validando il concetto oltre il vaiolo."
+  },
+  {
+    "q": "Chi fu il primo paziente su cui Pasteur somministrò con successo il vaccino antirabbico",
+    "opts": [
+      "Joseph Meisner",
+      "James Phipps",
+      "Sara Nelmes",
+      "James Simpson"
+    ],
+    "expl": "Il 6 luglio 1885, il piccolo Joseph Meister, morso in più punti da un cane rabbioso, fu portato a Parigi e trattato da Pasteur. All'epoca, la rabbia era una malattia quasi sempre fatale una volta che i sintomi si manifestavano. Pasteur, che aveva già sperimentato con successo il vaccino sugli animali, decise di correre il rischio e somministrò al bambino una serie di iniezioni del suo vaccino attenuato"
+  },
+  {
+    "q": "Montague ha introdotto in Inghilterra la vaccinazione:",
+    "opts": [
+      "Falso",
+      "Vero",
+      "Solo parzialmente",
+      "Confermato solo nel XIX secolo"
+    ],
+    "expl": "ha introdotto la variolizzazione, Jenner la vaccinazine"
+  },
+  {
+    "q": "Chi ha promosso la variolizzazione in Europa?",
+    "opts": [
+      "Lady Mary Montagu",
+      "Jenner",
+      "Girolamo Fracastoro",
+      "Rudolf Virchow"
+    ],
+    "expl": "Montagu promosse in Europa la variolizzazione osservata in Turchia: inoculazione di materiale pustoloso per indurre immunità parziale."
+  },
+  {
+    "q": "Quando l'OMS annunciò ufficialmente di aver eradicato il vaiolo a livello mondiale?",
+    "opts": [
+      "1980",
+      "1960",
+      "1945",
+      "1999"
+    ],
+    "expl": "L'Organizzazione Mondiale della Sanità (OMS) annunciò ufficialmente di aver eradicato il vaiolo a livello mondiale l'8 maggio 1980, durante la 33esima Assemblea Mondiale della Sanità."
+  },
+  {
+    "q": "Come si trasmette il vaiolo?",
+    "opts": [
+      "Tramite altri esseri umani",
+      "Punture di zanzara (Anopheles)",
+      "Pulci dei ratti (come la peste)",
+      "Contaminazione dell’acqua"
+    ],
+    "expl": "Il vaiolo si trasmette per via aerea/contatto tra persone; non coinvolge vettori come zanzare o acqua contaminata."
+  },
+  {
+    "q": "Vaiolo è una malattia umana dovuta a:",
+    "opts": [
+      "Infezione virale",
+      "Tossina batterica",
+      "Malattia autoimmune",
+      "Avitaminosi cronica"
+    ],
+    "expl": "Il vaiolo è causato da Orthopoxvirus (variola). I virus, non batteri o deficit nutrizionali, ne sono responsabili."
+  },
+  {
+    "q": "Chi scoprì il battere della lebbra: ",
+    "opts": [
+      "Armauer Hansen",
+      "Robert Koch",
+      "Robert Remak",
+      "Adelchi Negri"
+    ],
+    "expl": "Il batterio responsabile della lebbra, il Mycobacterium leprae, fu scoperto dal medico e dermatologo norvegese Gerhard Armauer Hansen nel 1873."
+  },
+  {
+    "q": "E. Jenner osservò che la lebbra colpiva le mucche. Questa affermazione è?",
+    "opts": [
+      "Falsa",
+      "Vera",
+      "Solo in casi isolati",
+      "Non dimostrata storicamente"
+    ],
+    "expl": "E. Jenner osservò che una forma del vaiolo, chiamata appunto cowpox, colpiva le mucche "
+  },
+  {
+    "q": "Il guaiaico era usato per curare?",
+    "opts": [
+      "La Sifilide",
+      "Il Colera",
+      "La Peste",
+      "La Rabbia"
+    ],
+    "expl": "Il legno di guaiaco, noto anche come lignum vitae (legno della vita), è stato storicamente utilizzato per le sue proprietà medicinali. prima dell'introduzione dei farmaci moderni, veniva utilizzato per curare la Sifilide, la Tubercolosi e l'Artrite"
+  },
+  {
+    "q": "Su quale malattia si faceva la prova dell’anestesia con lo spillone?",
+    "opts": [
+      "Lebbra",
+      "Tubercolosi",
+      "Sifilide",
+      "Peste bubbonica"
+    ],
+    "expl": "La perdita di sensibilità nella lebbra permetteva la ‘prova dello spillo’ per mostrare analgesia nelle aree colpite."
+  },
+  {
+    "q": "Secondo Galeno la rete mirabile era la zona dove",
+    "opts": [
+      "Il pneuma vitale si trasformava in pneuma animale",
+      "Il pneuma naturale si trasformava in pneuma vitale ",
+      "Il sangue arterioso diventava venoso",
+      "Il sangue venoso diventava arterioso"
+    ],
+    "expl": "Galeno, credeva che il corpo umano fosse governato da tre tipi di pneuma (spirito). NATURALE, formato nel fegato dal cibo; VITALE, formato nel cuore mescolando il pneuma naturale con l'aria inspirata, ANIMALE, il più nobile e motore della sensazione e del movimento.           Secondo Galeno, il pneuma vitale raggiungeva la base del cervello, dove si trovava una complessa rete di vasi sanguigni (la rete mirabile). Qui, attraverso una trasformazione, il pneuma vitale veniva purificato e trasformato in pneuma animale, che si diffondeva nel corpo attraverso i nervi, considerati canali cavi."
+  },
+  {
+    "q": "Chi osservò per primo gli effetti della coca con anestesia locale ma non la usò in un intervento?",
+    "opts": [
+      "Sigmund Freud",
+      "Carl Koller",
+      "William Morton",
+      "Humphry Davy"
+    ],
+    "expl": "Freud studiò gli effetti della coca su se stesso e ne intuì la potenzialità anestetica; l’uso clinico intraoperatorio fu poi di Koller (1884)."
+  },
+  {
+    "q": "Chi introdusse il cloroformio?",
+    "opts": [
+      "James Simpson",
+      "William Morton",
+      "Humphry Davy",
+      "Joseph Lister"
+    ],
+    "expl": "Simpson (1847) introdusse il cloroformio in ostetricia per analgesia; divenne popolare dopo l’approvazione anche in ambito reale."
+  },
+  {
+    "q": "Chi notò nel 1815 che l'etere etilico aveva effetti esilaranti simili al protossido di azoto?",
+    "opts": [
+      "Faraday",
+      "Volta",
+      "Davy",
+      "Priestley"
+    ],
+    "expl": "La scoperta di Faraday si inserisce in un periodo in cui l'interesse per i gas e i loro effetti sul corpo umano era molto diffuso. Già a fine Settecento, scienziati come Humphry Davy avevano sperimentato gli effetti inebrianti del protossido di azoto (il cosiddetto gas esilarante)."
+  },
+  {
+    "q": "Chi ha scoperto nel 1774 il protossido di azoto?",
+    "opts": [
+      "Joseph Priestley",
+      "Humphry Davy",
+      "Michael Faraday",
+      "Antoine Lavoisier"
+    ],
+    "expl": "Priestley isolò diversi ‘aria’ tra cui il protossido d’azoto (N₂O) nel 1774; Davy ne studiò poi gli effetti analgesici."
+  },
+  {
+    "q": "Chi ha formulato la teoria di evoluzione secondo selezione naturale:",
+    "opts": [
+      "Charles Darwin",
+      "Jean-Baptiste Lamarck",
+      "Alfred Wallace",
+      "Georges Cuvier"
+    ],
+    "expl": "Darwin e Wallace formularono la selezione naturale; l’opera cardine è ‘On the Origin of Species’ (1859)."
+  },
+  {
+    "q": "Qual era l’organo centrale per gli egizi?",
+    "opts": [
+      "Cuore",
+      "Cervello",
+      "Fegato",
+      "Polmoni"
+    ],
+    "expl": "Per Egizi e per Aristotele il cuore era sede della mente/psiche; il cervello fu riconosciuto più tardi come centrale (Galeno)."
+  },
+  {
+    "q": "Qual è l’organo con le funzioni psichiche per Aristotele?",
+    "opts": [
+      "Cuore",
+      "Cervello",
+      "Milza",
+      "Fegato"
+    ],
+    "expl": "Per Egizi e per Aristotele il cuore era sede della mente/psiche; il cervello fu riconosciuto più tardi come centrale (Galeno)."
+  },
+  {
+    "q": "Qual è l’organo fondamentale delle funzioni psichiche per Galeno?",
+    "opts": [
+      "Cervello",
+      "Cuore",
+      "Fegato",
+      "Midollo spinale"
+    ],
+    "expl": "Galeno riconobbe il cervello come sede delle funzioni nervose, opponendosi al cardio-centrismo aristotelico."
+  },
+  {
+    "q": "Nella medicina ippocratica l’organo più importante era:",
+    "opts": [
+      "Cervello",
+      "Cuore",
+      "Fegato",
+      "Polmoni"
+    ],
+    "expl": "Galeno riconobbe il cervello come sede delle funzioni nervose, opponendosi al cardio-centrismo aristotelico."
+  },
+  {
+    "q": "La medicina ippocratica era?",
+    "opts": [
+      "Allopatica",
+      "Omeopatica",
+      "Magico-religiosa",
+      "Teurgica"
+    ],
+    "expl": "La medicina ippocratica si basava su osservazione clinica e bilanciamento degli umori: terapia per contrari (allopatia)."
+  },
+  {
+    "q": "La medicina ippocratica ha portato:",
+    "opts": [
+      "Separazione tra medicina e religione",
+      "Rafforzamento delle pratiche magiche",
+      "Centralità del culto di Asclepio",
+      "Riduzione dell’importanza dell’osservazione clinica"
+    ],
+    "expl": "La tradizione ippocratica tende a naturalizzare la malattia, riducendo il ricorso a spiegazioni magico-religiose."
+  },
+  {
+    "q": "Quale è stata una delle prime affermazioni nella storia umana relativa alle regole di condotta morale e professionale?",
+    "opts": [
+      "Giuramento di Ippocrate",
+      "Corpus Hippocraticum",
+      "Regole di Galeno",
+      "Codice di Hammurabi"
+    ],
+    "expl": "È uno dei primi codici etici medici: definisce doveri come non nuocere, segreto professionale e rispetto dei pazienti."
+  },
+  {
+    "q": "Rispetto di tutti gli umani:",
+    "opts": [
+      "Giuramento di Ippocrate",
+      "Etica stoica",
+      "Deontologia romana",
+      "Principi del Cristianesimo antico"
+    ],
+    "expl": "È uno dei primi codici etici medici: definisce doveri come non nuocere, segreto professionale e rispetto dei pazienti."
+  },
+  {
+    "q": "Quale dei seguenti non contraddice il giuramento di Ippocrate?",
+    "opts": [
+      "Segreto professionale",
+      "Somministrazione di farmaci mortali",
+      "Aborto volontario",
+      "Rapporti sessuali con pazienti"
+    ],
+    "expl": "Il giuramento include l’obbligo di riservatezza; le altre opzioni lo contraddicono."
+  },
+  {
+    "q": "La medicina araba medievale si basava su?",
+    "opts": [
+      "La dottrina ippocratico-galenica",
+      "Teoria dei quattro elementi di Empedocle",
+      "Magia religiosa zoroastriana",
+      "Pratiche cinesi taoiste"
+    ],
+    "expl": "La medicina araba medievale assimilò, commentò e trasmise l’eredità ippocratico-galenica (Avicenna, Al-Razi)."
+  },
+  {
+    "q": "Qual è l’isola natale di Ippocrate con tempio di Asclepio?",
+    "opts": [
+      "Kos",
+      "Rodi",
+      "Creta",
+      "Lesbo"
+    ],
+    "expl": "L'isola natale di Ippocrate è Kos (o Coo), nel Dodecaneso, in Grecia. A Kos si trovava un importante santuario dedicato ad Asclepio, il dio greco della medicina, noto come l'Asclepieion di Kos. Questo tempio era anche la sede della famosa scuola medica di Ippocrate, dove si praticava un approccio razionale e scientifico alla medicina, distinguendola dalle pratiche religiose e magiche dell'epoca."
+  },
+  {
+    "q": "Nel mondo antico greco il principale dio della medicina era:",
+    "opts": [
+      "Asclepio",
+      "Apollo",
+      "Ermes",
+      "Zeus"
+    ],
+    "expl": "Ascelpio era considerato il figlio del dio Apollo e della ninfa Coronide. Il suo culto si diffuse ampiamente e i suoi santuari, chiamati asclepiei, erano luoghi di pellegrinaggio per i malati, che vi andavano per cercare guarigione attraverso rituali di purificazione e sogni terapeutici (incubazione). Il suo simbolo, un bastone con un serpente attorcigliato, è tuttora il simbolo della medicina."
+  },
+  {
+    "q": "Qual è il più famoso tempio dedicato ad Asclepio nell’antichità greca?",
+    "opts": [
+      "Epidauro",
+      "Delfi",
+      "Atene",
+      "Kos"
+    ],
+    "expl": "Il santuario di Asclepio a Epidauro era il più celebre centro di cura con rituali e incubazione dei sogni."
+  },
+  {
+    "q": "Qual è il nome dell’opera di Vesalio?",
+    "opts": [
+      "De humani corporis fabrica",
+      "Anatomia generalis",
+      "Corpus anatomicum",
+      "Ars medica"
+    ],
+    "expl": "L’opera monumentale di Vesalio (1543) rifondò l’anatomia su dissezione diretta e illustrazioni accurate."
+  },
+  {
+    "q": "Chi è l’inventore dello pneumotorace terapeutico?",
+    "opts": [
+      "Carlo Forlanini",
+      "Louis Pasteur",
+      "Agostino Bassi",
+      "Leonardo da Vinci"
+    ],
+    "expl": "Forlanini introdusse lo pneumotorace terapeutico per la TBC prima degli antibiotici, collassando il polmone malato."
+  },
+  {
+    "q": "Se si soddisfano i postulati di Koch possiamo affermare che:",
+    "opts": [
+      "Un microbo è la causa di una specifica malattia infettiva",
+      "Un microbo è la causa generica di una malattia infettiva",
+      "Un microbo è la causa di più malattie infettive",
+      "Ci vogliono almeno due microbi per causare una malattia infettiva"
+    ],
+    "expl": "I postulati di Koch sono quattro criteri sviluppati dal medico tedesco Robert Koch nell'Ottocento per stabilire una relazione causale tra un microrganismo e una malattia. Sono stati fondamentali per lo sviluppo della microbiologia medica."
+  },
+  {
+    "q": "Chi viene ufficialmente considerato uno dei principali esponenti della teoria microbiologica delle malattie infettive?",
+    "opts": [
+      "Robert Koch",
+      "Lazzaro Spallanzani",
+      "Giovan Battista Morgagni",
+      "Robert Brown"
+    ],
+    "expl": "Koch formulò i ‘postulati’ e identificò agenti come Mycobacterium tuberculosis e Vibrio cholerae, consolidando la teoria germinale."
+  },
+  {
+    "q": "Chi utilizzò l'Agar come mezzo indurente di coltura cellulare",
+    "opts": [
+      "Robert Koch",
+      "Louis Pasteur",
+      "Luigi Sacco",
+      "Adelchi Negri"
+    ],
+    "expl": "Koch formulò i ‘postulati’ e identificò agenti come Mycobacterium tuberculosis e Vibrio cholerae, consolidando la teoria germinale."
+  },
+  {
+    "q": "Chi introdusse il concetto di portatore sano?",
+    "opts": [
+      "Robert Koch",
+      "Louis Pasteur",
+      "Rudolf Virchow",
+      "Anton von Leeuwenhoek"
+    ],
+    "expl": "Koch formulò i ‘postulati’ e identificò agenti come Mycobacterium tuberculosis e Vibrio cholerae, consolidando la teoria germinale."
+  },
+  {
+    "q": "Chi è lo scopritore del batterio della tubercolosi?",
+    "opts": [
+      "Robert Koch",
+      "Louis Pasteur",
+      "Carlo Forlanini",
+      "Paul Ehrlich"
+    ],
+    "expl": "Koch formulò i ‘postulati’ e identificò agenti come Mycobacterium tuberculosis e Vibrio cholerae, consolidando la teoria germinale."
+  },
+  {
+    "q": "Da che tipo di microrganismo è dovuta la tubercolosi?",
+    "opts": [
+      "Batterio",
+      "Virus",
+      "Protozoo",
+      "Fungo"
+    ],
+    "expl": "La TBC e la sifilide sono causate da batteri (Mycobacterium tuberculosis; Treponema pallidum), non da virus o parassiti."
+  },
+  {
+    "q": "L’epidemia di sifilide fu causata da:",
+    "opts": [
+      "Batterio",
+      "Virus",
+      "Protozoo",
+      "Parassita"
+    ],
+    "expl": "La TBC e la sifilide sono causate da batteri (Mycobacterium tuberculosis; Treponema pallidum), non da virus o parassiti."
+  },
+  {
+    "q": "Da quale autore origina il termine sifilide?",
+    "opts": [
+      "Girolamo Fracastoro",
+      "Galeno",
+      "Paracelso",
+      "Avicenna"
+    ],
+    "expl": "Fracastoro coniò ‘sifilide’ nel poema ‘Syphilis sive morbus gallicus’ (1530) e teorizzò i ‘seminaria contagionum’."
+  },
+  {
+    "q": "Qual è la teoria più accettata sull’origine della sifilide?",
+    "opts": [
+      "Origine americana",
+      "Origine africana",
+      "Origine asiatica",
+      "Origine europea medievale"
+    ],
+    "expl": "L’ipotesi ‘colombiana’ spiega la diffusione in Europa dopo il 1493; altre ipotesi sono meno supportate."
+  },
+  {
+    "q": "La sifilide era meno pericolosa rispetto ad altri periodi: questa affermazione è?",
+    "opts": [
+      "Falsa",
+      "Vera",
+      "Parzialmente vera",
+      "Non dimostrabile"
+    ],
+    "expl": "La risposta corretta è “Falsa” perché è l’unica che rispetta la definizione storica o il principio scientifico implicato nella domanda; le altre rappresentano alternative scorrette o parziali."
+  },
+  {
+    "q": "Chi scoprì nel 1905 il Treponema Pallidum",
+    "opts": [
+      "Schaudinn",
+      "Schwann",
+      "Pasteur",
+      "Sabin"
+    ],
+    "expl": " L’idea dei “seminaria” di Fracastoro, l’idea di questi piccoli corpuscoli contagiosi, che sappiamo essere un batterio, si materializza quando Schaudan, un endocrinologo tedesco che nel 1905 trova questa spirocheta, cioè questo microrganismo spiraliforme, il Treponema Pallidum che è la causa appunto della malattia. "
+  },
+  {
+    "q": "Chi ha formulato la teoria cellulare?",
+    "opts": [
+      "Theodor Schwann e Matthias Schleiden",
+      "Lazzaro Spallanzani e Antonio Scarpa",
+      "Camillo Golgi e Santiago Ramón y Cajal",
+      "Robert Koch e Louis Pasteur"
+    ],
+    "expl": "Schwann e Schleiden (1838–39) formularono la teoria cellulare: cellula come unità fondamentale di piante e animali."
+  },
+  {
+    "q": "La teoria del neurone è principalmente ascrivibile a:",
+    "opts": [
+      "Santiago Ramón y Cajal",
+      "Camillo Golgi",
+      "Rita Levi Montalcini",
+      "Oliver Sacks"
+    ],
+    "expl": "Cajal dimostrò, contro il reticolarismo, che il sistema nervoso è composto da neuroni individuali (teoria del neurone)."
+  },
+  {
+    "q": "Chi ha formulato il concetto di patologia molecolare? ",
+    "opts": [
+      "Archibald Garrod e Linus Pauling",
+      "Rudolf Virchow e Robert Remak",
+      "James Watson e Francis Crick",
+      "Robert Koch e Louis Pasteur"
+    ],
+    "expl": "“Garrod ha avuto l'intuizione e ha formulato il concetto, Pauling ha fornito la prova definitiva e inequivocabile del concetto di patologia molecolare, dimostrando il legame tra un'anomalia molecolare e una malattia umana."
+  },
+  {
+    "q": "Chi ha fondato il concetto di patologia cellulare?",
+    "opts": [
+      "Rudolf Virchow",
+      "Giovan Battista Morgagni",
+      "Marcello Malpighi",
+      "Xavier Bichat"
+    ],
+    "expl": "Virchow fondò la patologia cellulare (‘omnis cellula e cellula’) collegando malattia e alterazioni cellulari."
+  },
+  {
+    "q": "La patologia d’organo venne introdotta da:",
+    "opts": [
+      "Giovan Battista Morgagni",
+      "Robert Hooke",
+      "Andreas Vesalio",
+      "William Harvey"
+    ],
+    "expl": "Morgagni collegò sistematicamente lesioni d’organo e sintomi clinici, fondando la patologia d’organo (1761)."
+  },
+  {
+    "q": "Morgagni è considerato fondatore di:",
+    "opts": [
+      "Patologia d’organo",
+      "Patologia cellulare",
+      "Patologia molecolare",
+      "Patologia di tessuto"
+    ],
+    "expl": "Il suo lavoro spostò l'attenzione della medicina dalla teoria degli umori, che dominava da secoli, alla comprensione che la malattia risiede in un organo o tessuto specifico, e non in uno squilibrio generale dei fluidi corporei. Questo approccio sistematico ha gettato le basi per la diagnostica medica moderna."
+  },
+  {
+    "q": "Qual è il concetto di patologia mancante nella lista: Patologia cellulare, Patologia d'organo, Patologia molecolare, ...",
+    "opts": [
+      "Patologia di tessuto",
+      "Patologia d’insieme",
+      "Patologia sintetica",
+      "Patologia comparata"
+    ],
+    "expl": "Le Patologie possono essere molecolari, cellulari, di tessuto e d'organo"
+  },
+  {
+    "q": "Chi introdusse i guanti di caucciù negli interventi chirurgici",
+    "opts": [
+      "William Halsted",
+      "Joseph Lister",
+      "Ignaz Semmelweis",
+      "Florence Nightingale"
+    ],
+    "expl": "Halsted introdusse in chirurgia i guanti di gomma (fine XIX sec.) per proteggere e ridurre infezioni."
+  },
+  {
+    "q": "Per cosa ha vinto Golgi il premio Nobel?",
+    "opts": [
+      "Reazione nera",
+      "Apparato del Golgi",
+      "Studio sulla malaria",
+      "Scoperta dei neuroni"
+    ],
+    "expl": "Il Nobel a Golgi (1906, ex aequo con Cajal) fu per la ‘reazione nera’, tecnica d’impregnazione argentica dei neuroni."
+  },
+  {
+    "q": "In che anno Golgi introdusse il metodo della reazione nera (anno e luogo)?",
+    "opts": [
+      "Nel 1873 alla Pia Casa degli Incurabili di Abbiategrasso",
+      "Nel 1876 a Pavia, nell’Istituto di Patologia Generale di Palazzo Botta",
+      "Nel 1865, poco dopo la laurea",
+      "1906, quando vinse il premio Nobel"
+    ],
+    "expl": "Nel 1873 Golgi mise a punto la ‘reazione nera’ mentre lavorava ad Abbiategrasso."
+  },
+  {
+    "q": "Quando è stata introdotta la diacetilmorfina?",
+    "opts": [
+      "1874 da morfina bollita con acido acetico",
+      "1869 da oppio distillato",
+      "1882 come derivato della cocaina",
+      "1871 da resina di papavero"
+    ],
+    "expl": "La diacetilmorfina (eroina) fu sintetizzata dall’acetilazione della morfina nel 1874 (Wright)."
+  },
+  {
+    "q": "Camillo Golgi è noto in tutto il mondo per aver detto quattro scoperte fondamentali (elimina quella scorretta):",
+    "opts": [
+      "La cura dell’insufficienza cardiaca con la digitale",
+      "Apparato del Golgi",
+      "Reazione nera",
+      "Organo muscolo tendineo"
+    ],
+    "expl": "Pensa un po' Lui ha fatto tutta sta roba e tu sei qui a fare dei quiz di medicina"
+  },
+  {
+    "q": "Quando ha avuto successo la terapia contro la peste?",
+    "opts": [
+      "Dopo la scoperta degli antibiotici",
+      "Dopo l’introduzione delle iniezioni di calomelano",
+      "Dopo l’introduzione degli antivirali ",
+      "Dopo l’introduzione degli antisettici di superficie"
+    ],
+    "expl": "La terapia efficace contro la peste divenne possibile con antibiotici moderni; quarantene limitavano ma non curavano."
+  },
+  {
+    "q": "Quali sono le due polarità opposte che caratterizzano la filosofia taoista alla base dell’antica medicina cinese?",
+    "opts": [
+      "Yin e Yang",
+      "Qi e Tao",
+      "Sole e Luna",
+      "Freddo e Caldo"
+    ],
+    "expl": "La medicina cinese classica si fonda sulle polarità Yin–Yang e sul flusso del Qi nei meridiani."
+  },
+  {
+    "q": "La teoria cinese dell’agopuntura è basata su:",
+    "opts": [
+      "Flusso continuo di energia vitale attraverso i meridiani",
+      "Bilanciamento degli umori corporei",
+      "Stimolazione dei nervi periferici",
+      "Regolazione della pressione sanguigna"
+    ],
+    "expl": "L’agopuntura mira a riequilibrare il Qi lungo i meridiani secondo la teoria tradizionale."
+  },
+  {
+    "q": "La prima epidemia conosciuta con sicurezza di peste a metà del Trecento è stata meno devastante delle infezioni successive.",
+    "opts": [
+      "Falso",
+      "Vero",
+      "In parte vero",
+      "Non determinabile"
+    ],
+    "expl": "In Europa si stima che il morbo abbia ucciso tra i 25 e i 50 milioni di persone, e alcuni storici arrivano a ipotizzare fino a 200 milioni a livello globale. Questi numeri rappresentano una percentuale altissima della popolazione, con stime che vanno dal 30% al 60% della popolazione europea dell'epoca. In sintesi, la Peste Nera è stata una delle pandemie più devastanti della storia, con un impatto demografico senza precedenti."
+  },
+  {
+    "q": "Nella medicina religiosa dell’antichità le malattie erano temute:",
+    "opts": [
+      "Come castighi divini",
+      "Come squilibri degli umori",
+      "Come conseguenza di dieta scorretta",
+      "Come influssi planetari"
+    ],
+    "expl": "Sì, in larga parte della medicina religiosa antica, le malattie venivano temute e interpretate come castighi divini, manifestazioni della rabbia degli dèi, o l'opera di demoni e spiriti maligni. Questa concezione era prevalente in molte civiltà."
+  },
+  {
+    "q": "Quale simbolo della medicina dall’antichità greca?",
+    "opts": [
+      "Un serpente arrotolato attorno a un bastone",
+      "Una colomba",
+      "Una croce",
+      "Un sole raggiante"
+    ],
+    "expl": "Il simbolo di Asclepio (un serpente e un bastone) rappresenta la medicina greca antica."
+  },
+  {
+    "q": "Quali erano i due fattori alla base della rinascita della medicina?",
+    "opts": [
+      "Fondazione di università ed ospedali",
+      "Diffusione della stampa",
+      "Espansione dell’Impero Romano",
+      "Scoperte geografiche"
+    ],
+    "expl": "Università e ospedali medievali europei furono motori della rinascita medica e della trasmissione del sapere."
+  },
+  {
+    "q": "Le prime università occidentali sono state fondate:",
+    "opts": [
+      "Tra il XI-XIV secolo",
+      "Nel V secolo",
+      "Nel XVI secolo",
+      "Nel XIX secolo"
+    ],
+    "expl": "Le prime università occidentali (Bologna, Parigi, Oxford) sorsero tra XI e XIV secolo."
+  },
+  {
+    "q": "Lucrezio fu autore dell'opera scientifico-poetica",
+    "opts": [
+      "De rerum natura",
+      "De sedibus et causis morborum per anatomen indagatis",
+      "De revolutionibus orbium coelestium",
+      "De usu partium"
+    ],
+    "expl": "Si tratta di un poema didascalico in esametri, composto da sei libri, in cui Lucrezio si propone di divulgare la filosofia di Epicuro. Il suo scopo principale è liberare gli uomini dalla paura degli dei e della morte, dimostrando che l'universo funziona secondo leggi meccaniche e materiali, senza l'intervento di divinità."
+  },  
+  {
+    "q": "Chi ha scritto che il mondo è un grande libro scritto in linguaggio matematico?",
+    "opts": [
+      "Galileo Galilei",
+      "Isaac Newton",
+      "Giordano Bruno",
+      "Cartesio"
+    ],
+    "expl": "Galileo definì la natura come ‘libro scritto in lingua matematica’, segnando il metodo scientifico moderno."
+  },
+  {
+    "q": "Chi ha introdotto il termine cellula per dei piccoli spazi visti con il microscopio nella struttura del sughero?",
+    "opts": [
+      "Robert Hooke",
+      "Anton van Leeuwenhoek",
+      "Rudolf Virchow",
+      "Schleiden"
+    ],
+    "expl": "Hooke (1665) introdusse ‘cellula’ descrivendo pori del sughero in ‘Micrographia’."
+  },
+  {
+    "q": "Prima del Sedicesimo secolo il taglio cesareo veniva quasi sempre effettuato su:",
+    "opts": [
+      "Solitamente post-mortem cercando di effettuarlo velocemente dopo il decesso per poter salvare il/la nascituro/a",
+      "Su donna viva",
+      "Attorno al sesto-settimo mese di gravidanza per ridurre l’entità del taglio",
+      "Su donna viva purché si potesse avvertire il battito fetale"
+    ],
+    "expl": "Prima del XVI sec. il cesareo era post-mortem per salvare il feto; l’intervento su viventi era rarissimo e mortale."
+  },
+  {
+    "q": "Quali furono i due accorgimenti introdotti da Edoardo Porro nel taglio cesareo?",
+    "opts": [
+      "Rimozione dell’utero e abboccamento del collo uterino sezionato alla ferita addominale",
+      "Utilizzo di forcipe associato a manovra pressoria addominale per facilitare l’espulsione",
+      "Sinfisiotomia e successive sutura pubica",
+      "Parto prematuro artificiale e pressione addominale per facilitare l’espulsione"
+    ],
+    "expl": "Prima di Porro, il taglio cesareo sulla donna viva aveva una mortalità vicina al 100%, principalmente a causa delle emorragie incontrollabili e delle infezioni (sepsi) che seguivano l'operazione. L'utero gravido non era in grado di contrarsi efficacemente dopo l'estrazione, lasciando una grande ferita sanguinante e un'enorme via d'accesso per i batteri."
+  },
+  {
+    "q": "La sinfisiotomia era praticata nel Settecento per:",
+    "opts": [
+      "Cercare di salvare la madre e il bambino durante il parto",
+      "Favorire la defecaione nel caso di un blocco intestinale",
+      "Favorire gli interventi sulla vescica partendo dalla via pelvica",
+      "Favorire l'espulsione di un calcolo vescicale di elevate dimensioni"
+    ],
+    "expl": "Questo intervento chirurgico consisteva nella recisione dell'articolazione cartilaginea (la sinfisi pubica) che unisce le due ossa del pube. Sebbene possa sembrare un'operazione estremamente rischiosa e dolorosa (e lo era, con un'alta incidenza di complicazioni come infezioni, emorragie e instabilità del bacino), veniva considerata un'alternativa meno letale rispetto al taglio cesareo o all'embriotomia (la distruzione del feto)."
+  },
+  {
+    "q": "Chi per primo amputò un arto sotto anestesia in Europa?",
+    "opts": [
+      "Robert Liston",
+      "Robert Koch",
+      "Robert Brown",
+      "James Simpson"
+    ],
+    "expl": "Il primo a eseguire un'amputazione sotto anestesia in Europa fu il chirurgo scozzese Robert Liston, l'intervento avvenne il 21 dicembre 1846 presso l'University College Hospital di Londra."
+  },
+  {
+    "q": "Cosa usò Agostino Bassi per dimostrare che un microbo causa malattie infettive?",
+    "opts": [
+      "Baco da seta",
+      "Cavie da laboratorio",
+      "Ratti",
+      "Pulci"
+    ],
+    "expl": "Bassi dimostrò che la ‘malattia del baco da seta’ era infettiva e trasmissibile da un microrganismo."
+  },
+  {
+    "q": "Chi ha per primo fornito prove sperimentali alla teoria microbiologica delle malattie infettive?",
+    "opts": [
+      "Agostino Bassi",
+      "Louis Pasteur",
+      "Robert Koch",
+      "Edward Jenner"
+    ],
+    "expl": "Agostino Bassi (1773-1856) è stato effettivamente il primo a fornire prove sperimentali inconfutabili a sostegno della teoria microbiologica delle malattie infettive, dimostrando che la malattia che stava devastando gli allevamenti di bachi da seta in Europa era causata da un organismo vivente microscopico. Il suo lavoro ha preceduto quello di Pasteur e Koch di diversi decenni."
+  },
+  {
+    "q": "Chi ha dimostrato per primo che negli animali una malattia infettiva è causata da microrganismo?",
+    "opts": [
+      "Agostino Bassi",
+      "Pasteur",
+      "Koch",
+      "Lister"
+    ],
+    "expl": "Agostino Bassi ha dimostrato che la malattia che stava devastando gli allevamenti di bachi da seta in Europa era causata da un organismo vivente microscopico."
+  },
+  {
+    "q": "Chi è il padre della teoria della microbiologia?",
+    "opts": [
+      "Louis Pasteur",
+      "Robert Koch",
+      "Ignaz Semmelweis",
+      "Jenner"
+    ],
+    "expl": "Pasteur estese la vaccinazione a malattie come rabbia e antrace tramite attenuazione dei patogeni, validando il concetto oltre il vaiolo."
+  },
+  {
+    "q": "Chi ha scoperto il mondo dei microorganismi?",
+    "opts": [
+      "Anton van Leeuwenhoek",
+      "Robert Hooke",
+      "Rudolf Virchow",
+      "Galileo Galilei"
+    ],
+    "expl": "Con i suoi microscopi, Leeuwenhoek osservò ‘animalculi’ (batteri/protozoi), aprendo il mondo microbico."
+  },
+  {
+    "q": "Simbolo della medicina occidentale dall’antichità:",
+    "opts": [
+      "Serpente su un bastone",
+      "Caduceo con due serpenti",
+      "Croce rossa",
+      "Colomba"
+    ],
+    "expl": "Un bastone verticale, attorno al quale si avvolge un unico serpente, è la rappresentazione del bastone di Ascelpio, dio della medicina e della guarigione. Il serpente, che è un animale che cambia pelle (simbolo di rinascita e rinnovamento), era considerato sacro per lui. Il bastone, invece, rappresentava il viaggio del medico."
+  },
+  {
+    "q": "Qual è la relazione fra umori e temperamento?",
+    "opts": [
+      "Bile nera – melanconico",
+      "Sangue – collerico",
+      "Flemma – sanguigno",
+      "Bile gialla – flemmatico"
+    ],
+    "expl": "Bile gialla → Collerico (passionale, irritabile, energico), Bile nera → Melanconico (riflessivo, triste, analitico), Sangue → Sanguigno (allegro, socievole, ottimista), Flegma → Flemmatico (calmo, pigro, indifferente)"
+  },
+  {
+    "q": "Quale temperamento è associato all’umore giallo?",
+    "opts": [
+      "Bilioso o collerico",
+      "Melanconico",
+      "Sanguigno",
+      "Flemmatico"
+    ],
+    "expl": "Secondo la teoria degli umori, che ha dominato la medicina occidentale per quasi due millenni (da Ippocrate a Galeno), ogni temperamento era legato a uno dei quattro fluidi corporei, chiamati umori. Bile gialla → Collerico (passionale, irritabile, energico), Bile nera → Melanconico (riflessivo, triste, analitico), Sangue → Sanguigno (allegro, socievole, ottimista), Flegma → Flemmatico (calmo, pigro, indifferente)"
+  },
+  {
+    "q": "Qual è l’umore che manca in questa lista in accordo con la medicina ippocratica?  Bile nera, Sangue, Flemma",
+    "opts": [
+      "Bile gialla",
+      "Linfa",
+      "Bile verde",
+      "Bile rossa"
+    ],
+    "expl": "Bile gialla → Collerico (passionale, irritabile, energico), Bile nera → Melanconico (riflessivo, triste, analitico), Sangue → Sanguigno (allegro, socievole, ottimista), Flegma → Flemmatico (calmo, pigro, indifferente)"
+  },
+  {
+    "q": "L'esistenza dei capillari viene accertata sperimentalmente, per la prima volta, da?",
+    "opts": [
+      "Malpighi",
+      "Vesalio",
+      "Harvey",
+      "Cesalpino"
+    ],
+    "expl": "Malpighi, un anatomista e medico italiano, utilizzò un microscopio per osservare la circolazione sanguigna nelle branchie di un'anguilla e nei polmoni di una rana. vide per la prima volta una rete di piccolissimi vasi sanguigni che collegavano le arterie alle vene, risolvendo così l'enigma che William Harvey aveva lasciato aperto con la sua teoria della circolazione sanguigna. Harvey aveva dimostrato che il sangue si muoveva in un circuito chiuso, ma non aveva potuto spiegare come il sangue passasse dalle arterie alle vene."
+  },
+  {
+    "q": "La teoria della circolazione sanguigna è stata formulata da:",
+    "opts": [
+      "William Harvey",
+      "Andreas Vesalio",
+      "Galeno",
+      "Malpighi"
+    ],
+    "expl": "Harvey (1628) dimostrò la circolazione del sangue con pompe e calcoli quantitativi, confutando Galeno."
+  },
+  {
+    "q": "La direzione del flusso sanguigno in arterie e vene è stata accertata da Harvey attraverso:",
+    "opts": [
+      "Differenti compressioni di sangue con un laccio",
+      "Osservazioni al microscopio",
+      "Esperimenti con animali",
+      "Teoria umorale"
+    ],
+    "expl": "Harvey documentò il flusso unidirezionale con lacci/legature mostrando rigonfiamenti venosi e valvole."
+  },
+  {
+    "q": "La quantità di sangue che arrivava al cuore era, secondo Harvey:",
+    "opts": [
+      "Superiore a quello del cibo ingerito",
+      "Uguale al cibo ingerito",
+      "Minore del cibo ingerito",
+      "Dipendeva dal metabolismo"
+    ],
+    "expl": "Prima di Harvey, la teoria di Galeno sosteneva che il sangue veniva prodotto dal fegato a partire dal cibo e poi consumato dai tessuti del corpo, senza ricircolo. Harvey confutò questa idea con un semplice calcolo matematico. Egli calcolò che il cuore, con ogni battito, espelle una certa quantità di sangue. Moltiplicando il numero dei battiti cardiaci per il volume di sangue espulso, si arrivava a una quantità di sangue pompato in un'ora molto più grande del peso corporeo totale di una persona."
+  },
+  {
+    "q": "Chi scoprì che le isole di Langerhans sono la sede di produzione dell’insulina?",
+    "opts": [
+      "Frederick Grant Banting",
+      "Giovanni Battista Morgagni ",
+      "Arrigo Visentini",
+      "James Bertram Collip"
+    ],
+    "expl": "la concezione iniziale e l'idea sperimentale che portò all'isolamento iniziale dell'insulina furono di Frederick Banting. La sua intuizione di legare i dotti pancreatici per atrofizzare il pancreas esocrino e isolare così la secrezione endocrina fu il punto di partenza della ricerca."
+  },
+  {
+    "q": "Chi ha scoperto l’insulina?",
+    "opts": [
+      "Banting e Best",
+      "Paul Ehrlich",
+      "Claude Bernard",
+      "Pavlov"
+    ],
+    "expl": "Nel 1921 isolarono l’insulina nel cane (con Macleod e Collip), inaugurando la terapia del diabete."
+  },
+  {
+    "q": "L’eredità della cultura antica è arrivata a noi attraverso (scegli l’errata):",
+    "opts": [
+      "La medicina slavica",
+      "Traduzioni arabe",
+      "Monasteri medievali",
+      "Rinascimento europeo"
+    ],
+    "expl": "Tra i principali canali di trasmissione dell’antico sapere in Occidente non figurano fonti ‘slave’; centrali furono arabi, monasteri e Rinascimento."
+  },
+  {
+    "q": "L’eredità della cultura antica è arrivata fino a noi attraverso:",
+    "opts": [
+      "Invasioni di popolazioni dalla Germania e/o Est Europa durante il periodo medievale (invasioni barbariche)",
+      "Scoperte geografiche",
+      "Filosofi illuministi",
+      "Rivoluzione industriale"
+    ],
+    "expl": "La risposta corretta è “Invasioni di popolazioni dalla Germania e/o Est Europa durante il periodo medievale (invasioni barbariche)” perché è l’unica che rispetta la definizione storica o il principio scientifico implicato nella domanda; le altre rappresentano alternative scorrette o parziali."
+  },
+  {
+    "q": "L’eredità degli antichi è giunta a noi attraverso (elimina la risposta sbagliata):",
+    "opts": [
+      "La guerra dei cent’anni",
+      "Traduzioni arabe",
+      "Monasteri medievali",
+      "Rinascimento europeo"
+    ],
+    "expl": "La risposta corretta è “La guerra dei cent’anni” perché è l’unica che rispetta la definizione storica o il principio scientifico implicato nella domanda; le altre rappresentano alternative scorrette o parziali."
+  },
+  {
+    "q": "Qual è stata la ragione per cui la dissezione del cadavere umano era ostacolata nei tempi greci e romani?",
+    "opts": [
+      "Perché il corpo era considerato impuro e inquinante",
+      "Perché non esistevano strumenti chirurgici",
+      "Perché era vietato dalla filosofia platonica",
+      "Perché non c’era interesse scientifico"
+    ],
+    "expl": "Tabù religiosi/culturali ostacolavano la dissezione nell’antichità greco-romana; eccezioni in Alessandria (Erofilo/Erasistrato)."
+  },
+  {
+    "q": "Secondo le fonti le prime dissezioni umane a scopo conoscitivo vennero effettuate da:",
+    "opts": [
+      "Erofilo ed Erasistrato",
+      "Galeno",
+      "Ippocrate",
+      "Aristotele"
+    ],
+    "expl": "Ad Alessandria (III sec. a.C.) effettuarono dissezioni sistematiche su cadaveri per fini conoscitivi."
+  },
+  {
+    "q": "La più grande piaga pandemica che ha colpito il mondo:",
+    "opts": [
+      "Quattordicesimo secolo",
+      "Ottavo secolo",
+      "Diciannovesimo secolo",
+      "Primo secolo"
+    ],
+    "expl": "La ‘Morte Nera’ (1347–52) fu la più devastante pandemia storica di peste in Europa."
+  },
+  {
+    "q": "Qual è stato il punto di svolta sotto il nome di “rivoluzione neolitica”?",
+    "opts": [
+      "Passaggio da caccia a agricoltura e domesticazione",
+      "Introduzione del bronzo",
+      "Nascita delle prime città-stato",
+      "Invenzione della scrittura"
+    ],
+    "expl": "La rivoluzione neolitica trasformò società e salute con sedentarizzazione, surplus e nuove malattie zoonotiche."
+  },
+  {
+    "q": "Quale fu il punto di svolta “culturale” fra gli ominidi?”?",
+    "opts": [
+      "La rivoluzione neolitica",
+      "La scoperta del fuoco",
+      "La domesticazione",
+      "Il bipedismo "
+    ],
+    "expl": "La rivoluzione neolitica trasformò società e salute con sedentarizzazione, surplus e nuove malattie zoonotiche."
+  },
+  {
+    "q": "Chi ha prevenuto per la prima volta la febbre puerperale?",
+    "opts": [
+      "Ignaz Semmelweis",
+      "Louis Pasteur",
+      "Joseph Lister",
+      "Edward Jenner"
+    ],
+    "expl": "Semmelweis ridusse drasticamente la febbre puerperale imponendo il lavaggio delle mani (1847)."
+  },
+  {
+    "q": "Il più importante anatomista del Rinascimento:",
+    "opts": [
+      "Andrea Vesalio",
+      "Galeno",
+      "William Harvey",
+      "Marcello Malpighi"
+    ],
+    "expl": "Vesalio è figura cardine dell’anatomia rinascimentale con dissezioni e tavole realistiche."
+  },
+  {
+    "q": "Il libro più importante pubblicato da Vesalio:",
+    "opts": [
+      "De humani corporis fabrica",
+      "Micrographia",
+      "De revolutionibus orbium coelestium",
+      "Anatomia Universa"
+    ],
+    "expl": "L’opera monumentale di Vesalio (1543) rifondò l’anatomia su dissezione diretta e illustrazioni accurate."
+  },
+  {
+    "q": "In accordo con Galeno, il sangue era formato:",
+    "opts": [
+      "Nel fegato",
+      "Nei polmoni",
+      "Nel cuore",
+      "Nel midollo osseo"
+    ],
+    "expl": "Per Galeno il sangue veniva ‘prodotto’ nel fegato dal chilo; concetto superato da Harvey."
+  },
+  {
+    "q": "Età d’oro della scuola medica fondata a Salerno:",
+    "opts": [
+      "1096–1270 d.C.",
+      "500–800 d.C.",
+      "1400–1600 d.C.",
+      "100–300 d.C."
+    ],
+    "expl": "In quel periodo la Scuola Medica Salernitana raggiunse il suo apice come centro europeo di insegnamento medico."
+  },
+  {
+    "q": "Chi è lo scopritore del concetto di nucleo cellulare?",
+    "opts": [
+      "Robert Brown",
+      "Schleiden",
+      "Theodor Schwann",
+      "Rudolf Virchow"
+    ],
+    "expl": "“Nel 1831, Brown osservò una struttura rotonda e ben definita all'interno delle cellule vegetali, in particolare nell'epidermide delle orchidee. A differenza di altri scienziati dell'epoca, che avevano notato la presenza di un granulo centrale nelle cellule senza attribuirgli un significato specifico, Brown comprese l'importanza e la regolarità di questa struttura, che chiamò nucleo(dal latino nucleus, nocciolo)."
+  },
+  {
+    "q": "Chi è considerato il fondatore dell’istologia:",
+    "opts": [
+      "Xavier Bichat",
+      "Marcello Malpighi",
+      "Rudolf Virchow",
+      "Robert Hooke"
+    ],
+    "expl": "Bichat fondò l’istologia distinguendo i tessuti come unità anatomiche e funzionali (senza microscopio!)."
+  },
+  {
+    "q": "Chi ha scritto il libro con relazione tra organi e sintomi clinici:",
+    "opts": [
+      "Giovan Battista Morgagni",
+      "Andrea Vesalio",
+      "Claude Bernard",
+      "William Harvey"
+    ],
+    "expl": "Morgagni collegò sistematicamente lesioni d’organo e sintomi clinici, fondando la patologia d’organo (1761)."
+  },
+  {
+    "q": "Chi era il medico arabo che ha formulato la teoria della circolazione polmonare?",
+    "opts": [
+      "Ibn al-Nafis",
+      "Avicenna",
+      "Al-Razi",
+      "Averroè"
+    ],
+    "expl": "Nel XIII sec. descrisse la circolazione polmonare confutando il passaggio diretto attraverso il setto interventricolare."
+  },
+  {
+    "q": "Quali sono le tre forme di una pandemia/peste? (completa): Bubbonica, Polmonare, ...",
+    "opts": [
+      "Setticemica / forma nera",
+      "Epidemica / endemica",
+      "Cronica / acuta",
+      "Batterica / virale"
+    ],
+    "expl": "La peste presenta forme bubbonica, polmonare e setticemica (‘forma nera’ per necrosi ischemica)."
+  },
+  {
+    "q": "La piaga bubbonica è una malattia umana data da:",
+    "opts": [
+      "Infezione batterica",
+      "Virus",
+      "Malattia autoimmune",
+      "Intossicazione"
+    ],
+    "expl": "La peste è causata da Yersinia pestis, batterio trasmesso da pulci di roditori o per via aerea nelle forme polmonari."
+  }
+];
+
+    const ALL=QUESTIONS;
+    document.getElementById('totalCount').textContent=ALL.length;
+    let picked=[],correctSoFar=0,index=0,answers=[],answered=false;
+    function start(){ const n=Math.min(parseInt(document.getElementById('howmany').value)||ALL.length,ALL.length);
+      picked=[...ALL].sort(()=>Math.random()-0.5).slice(0,n); index=0; correctSoFar=0; answers=[]; answered=false;
+      document.getElementById('start').style.display='none'; document.getElementById('quiz').style.display='block';
+      document.getElementById('result').style.display='none'; showQ();}
+    function updateProgress(){ const pct=((index)/picked.length)*100; document.getElementById('progress').style.width=pct+'%'; }
+    function showQ(){ if(index>=picked.length){ return showResult(); } updateProgress(); const q=picked[index];
+      const opts=[...q.opts].sort(()=>Math.random()-0.5); const content=document.getElementById('quizContent');
+      content.innerHTML=`<h2>${q.q}</h2>`+opts.map(o=>`<div class='option'>${o}</div>`).join('')+`<div class='explanation' id='expl'></div>`;
+      document.getElementById('nextBtn').style.display='none'; answered=false;
+      [...document.querySelectorAll('.option')].forEach(el=>{ el.onclick=()=>{ if(answered) return; answered=true; const correct=q.opts[0]; const chosen=el.textContent; const expl=q.expl; const isCorrect = chosen===correct;
+          if(isCorrect) el.classList.add('correct'); else el.classList.add('wrong'); document.querySelectorAll('.option').forEach(opt=>{ if(opt.textContent===correct) opt.classList.add('correct'); }); document.getElementById('expl').innerText=expl;
+          if(isCorrect) correctSoFar++; answers.push({question:q.q, chosen, correct, isCorrect, expl}); document.getElementById('nextBtn').style.display='inline-block'; }; }); }
+    document.getElementById('nextBtn').onclick=()=>{ index++; showQ(); };
+    function showResult(){ document.getElementById('quiz').style.display='none'; document.getElementById('progress').style.width='100%'; const pct=Math.round(100*correctSoFar/picked.length);
+      document.getElementById('circleText').textContent=pct+'%'; const circleBar=document.getElementById('circleBar'); const offset=440 - (440*pct/100); circleBar.style.strokeDashoffset=offset;
+      document.getElementById('verdict').textContent=pct<50?'Da ripassare':pct<70?'Ci sei quasi':pct<90?'Ottimo!':'Perfetto!'; const masc=document.getElementById('mascotte'); if(pct<50) masc.textContent='😢'; else if(pct<70) masc.textContent='😐'; else if(pct<90) masc.textContent='😊'; else masc.textContent='🤩';
+      const list=document.getElementById('answersList'); list.innerHTML='<h3>Le tue risposte:</h3>' + answers.map(a=> `<div class='answer-item'> <span class='status ${a.isCorrect?"correct":"wrong"}'>${a.isCorrect?"✔︎":"✘"}</span> <strong>${a.question}</strong><br> La tua risposta: ${a.chosen}<br> Corretta: ${a.correct}<br> <em>Spiegazione: ${a.expl}</em> </div>`).join('');
+      document.getElementById('result').style.display='block';}
+    document.getElementById('startBtn').onclick=start; document.getElementById('restartBtn').onclick=()=>{ document.getElementById('start').style.display='block'; document.getElementById('result').style.display='none'; };
+    document.getElementById('retryWrongBtn').onclick=()=>{ picked=answers.filter(a=>!a.isCorrect).map(a=>({q:a.question,opts:[a.correct,...ALL.find(q=>q.q===a.question).opts.filter(o=>o!==a.correct)],expl:a.expl})); index=0; correctSoFar=0; answers=[]; answered=false;
+      document.getElementById('result').style.display='none'; document.getElementById('quiz').style.display='block'; showQ(); };
+
+    // Stepper logic
+    const input=document.getElementById('howmany');
+    document.getElementById('increase').onclick=()=>{ let v=parseInt(input.value)||1; if(v<ALL.length) input.value=v+1; };
+    document.getElementById('decrease').onclick=()=>{ let v=parseInt(input.value)||1; if(v>1) input.value=v-1; };
+  </script>
+</body></html>
